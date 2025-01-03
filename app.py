@@ -10,11 +10,14 @@ from pathlib import Path
 st.title("Cobot Activity Detection")
 st.write("Upload a video or record in real-time to detect when the cobot is working.")
 
-# Load TFLite model
+# Load the TFLite model using TensorFlow
 def load_model(tflite_model_path):
-    interpreter = tflite.Interpreter(model_path=tflite_model_path)
+    interpreter = tf.lite.Interpreter(model_path=tflite_model_path)
     interpreter.allocate_tensors()
     return interpreter
+# Example usage in the app
+interpreter = load_model("robot_classification_model.tflite")
+
 
 # Process video frames with the TFLite model
 def process_frame(frame, interpreter, input_details, output_details):
