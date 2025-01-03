@@ -1,23 +1,16 @@
+import tensorflow as tf
 import streamlit as st
-import tempfile
 import cv2
 import numpy as np
 import pandas as pd
-import tflite_runtime.interpreter as tflite
+import tempfile
 from pathlib import Path
-
-# Set up the app
-st.title("Cobot Activity Detection")
-st.write("Upload a video or record in real-time to detect when the cobot is working.")
 
 # Load the TFLite model using TensorFlow
 def load_model(tflite_model_path):
     interpreter = tf.lite.Interpreter(model_path=tflite_model_path)
     interpreter.allocate_tensors()
     return interpreter
-# Example usage in the app
-interpreter = load_model("robot_classification_model.tflite")
-
 
 # Process video frames with the TFLite model
 def process_frame(frame, interpreter, input_details, output_details):
@@ -63,35 +56,31 @@ def detect_start_stop_timings(video_path, interpreter, input_details, output_det
     timing_df = pd.DataFrame(timings)
     return timing_df
 
-# Handle video upload
-uploaded_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
-real_time_video = st.button("Record Real-Time Video")
+# Streamlit App
+st.title("Cobot Activity Detection")
+st.write("Upload a video to detect cobot's working and off timings.")
 
-# Temporary file for uploaded video
+# Upload video
+uploaded_file = st.file_uploader("Upload a video", type=["mp4", "avi", "mov"])
 if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
         temp_video.write(uploaded_file.read())
         video_path = temp_video.name
         st.success("Video uploaded successfully!")
 
-# Handle real-time video
-if real_time_video:
-    video_path = "real_time_video.mp4"  # Placeholder for real-time video implementation
-    st.warning("Real-time video recording feature not implemented yet.")
-
-# Process the video if we have a valid path
-if 'video_path' in locals():
-    tflite_model_path = "robot_classification_model.tflite"  # Path to your TFLite model
+    # Load TFLite model
+    tflite_model_path = "robot_classification_model.tflite"  # Replace with your model's path
     interpreter = load_model(tflite_model_path)
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
+    # Process video and detect timings
     st.info("Processing video, please wait...")
     timing_df = detect_start_stop_timings(video_path, interpreter, input_details, output_details)
 
-    # Display the table
+    # Display timings
     if not timing_df.empty:
         st.write("Cobot Start and Stop Timings:")
         st.dataframe(timing_df)
     else:
-        st.warning("No cobot activity detected in the video.")
+        st.warning("No cobot activity detected.")
