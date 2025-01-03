@@ -120,8 +120,5 @@ if uploaded_file is not None:
         st.write("Cobot Start and Stop Timings:")
         st.dataframe(merged_timing_df)
 
-        # Save merged timings to a CSV file
-        merged_timing_df.to_csv('/content/merged_cobot_timing.csv', index=False)
-        st.success("Merged timings saved to merged_cobot_timing.csv")
     else:
         st.warning("No cobot activity detected.")
