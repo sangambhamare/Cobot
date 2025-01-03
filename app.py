@@ -56,6 +56,40 @@ def detect_start_stop_timings(video_path, interpreter, input_details, output_det
     timing_df = pd.DataFrame(timings)
     return timing_df
 
+# Combine nearby intervals
+def combine_nearby_intervals(timing_df, merge_threshold=2.0):
+    """
+    Combine nearby time intervals in the timing DataFrame.
+    
+    :param timing_df: DataFrame containing 'Start Time (s)' and 'Stop Time (s)'.
+    :param merge_threshold: Maximum difference between stop time of one interval
+                            and start time of the next to combine them.
+    :return: Merged DataFrame.
+    """
+    combined_intervals = []
+    current_start = timing_df.iloc[0]['Start Time (s)']
+    current_stop = timing_df.iloc[0]['Stop Time (s)']
+
+    for i in range(1, len(timing_df)):
+        next_start = timing_df.iloc[i]['Start Time (s)']
+        next_stop = timing_df.iloc[i]['Stop Time (s)']
+
+        # Check if intervals are close enough to merge
+        if next_start - current_stop <= merge_threshold:
+            current_stop = next_stop  # Extend the current interval
+        else:
+            # Save the current interval and start a new one
+            combined_intervals.append({"Start Time (s)": current_start, "Stop Time (s)": current_stop})
+            current_start = next_start
+            current_stop = next_stop
+
+    # Add the last interval
+    combined_intervals.append({"Start Time (s)": current_start, "Stop Time (s)": current_stop})
+
+    # Convert to DataFrame
+    merged_df = pd.DataFrame(combined_intervals)
+    return merged_df
+
 # Streamlit App
 st.title("Cobot Activity Detection")
 st.write("Upload a video to detect cobot's working and off timings.")
@@ -78,9 +112,16 @@ if uploaded_file is not None:
     st.info("Processing video, please wait...")
     timing_df = detect_start_stop_timings(video_path, interpreter, input_details, output_details)
 
-    # Display timings
+    # Combine nearby intervals
     if not timing_df.empty:
+        merged_timing_df = combine_nearby_intervals(timing_df, merge_threshold=2.0)
+
+        # Display timings
         st.write("Cobot Start and Stop Timings:")
-        st.dataframe(timing_df)
+        st.dataframe(merged_timing_df)
+
+        # Save merged timings to a CSV file
+        merged_timing_df.to_csv('/content/merged_cobot_timing.csv', index=False)
+        st.success("Merged timings saved to merged_cobot_timing.csv")
     else:
         st.warning("No cobot activity detected.")
